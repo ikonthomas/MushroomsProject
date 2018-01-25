@@ -1,0 +1,46 @@
+mush <- read.csv("mushrooms.csv", stringsAsFactors = TRUE)
+str(mush)
+
+# remove veil_type because all are same, therefore unnecessary column
+mush$veil_type = NULL 
+
+mush$class = sapply(mush$class, function(x){ifelse(x=='e', 'edible', 'poisonous')})
+str(mush$class)
+table(mush$class)
+
+# setting the seed so that we get reproducible results
+set.seed(123)
+train_sample <- sample(8124, 6000)
+
+#separate training and test sets
+mush_train <- mush[train_sample, ]
+mush_test  <- mush[-train_sample, ]
+str(mush_train)
+str(mush_test)
+
+#get column index of train flag
+trainColNum <- grep('train',names(train_sample))
+
+#remove train flag column from train and test samples
+train <- mush_train[,-trainColNum]
+test <- mush_test[,-trainColNum]
+
+#get column index of predicted variable in dataset
+typeColNum <- grep('Class',names(mush))
+
+# complexity factor set to .0005
+dtree = rpart(class~., data=mush_train, control = rpart.control(cp = .0005)) 
+
+dtree_pred = predict(dtree, mush_test, type='class')
+mean(dtree_pred==mush_test$class) # percent of the test set that was correctly predicted, with this seed the model happens to predict with 100% accuracy
+
+# confusion matrix of the test set and the model predictions
+table(dtree_pred, mush_test$class)
+
+# confusion matrix of the full data set and the model predictions
+table(dtree_pred_full, mush$class) 
+
+
+# wrongly classified mushroomsin the test data
+dtree_pred_full = predict(dtree, mush, type='class')
+mean(dtree_pred_full==mush$class) # percent of the full data set that was correctly predicted
